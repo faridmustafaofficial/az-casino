@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cartoon Dice Battle</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #5D3FD3; /* Bənövşəyi */
+            --card-color: #ffffff;
+            --primary: #FFD700; /* Qızılı */
+            --secondary: #FF4757; /* Qırmızı */
+            --accent: #2ED573; /* Yaşıl */
+            --text-dark: #2F3542;
+            --border: 3px solid #2F3542;
+            --shadow: 4px 4px 0px #2F3542;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(#70a1ff 15%, transparent 16%), radial-gradient(#70a1ff 15%, transparent 16%);
+            background-size: 60px 60px;
+            background-position: 0 0, 30px 30px;
+            margin: 0;
+            height: 100vh;
+            display: flex; /* Mərkəzləmə */
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            color: var(--text-dark);
+        }
+
+        h1, h2, h3 { font-family: 'Fredoka One', cursive; margin: 0; color: var(--text-dark); letter-spacing: 1px; }
+
+        /* --- ƏSAS KONTEYNER --- */
+        .container {
+            width: 95%;
+            max-width: 500px;
+            background: var(--card-color);
+            border: var(--border);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.2);
+            position: relative;
+            max-height: 95vh;
+            overflow-y: auto;
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float { 0% {transform: translateY(0px);} 50% {transform: translateY(-10px);} 100% {transform: translateY(0px);} }
+
+        /* --- DÜYMƏLƏR --- */
+        .btn {
+            background: var(--primary);
+            color: var(--text-dark);
+            border: var(--border);
+            padding: 12px 20px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: all 0.1s;
+            width: 100%;
+            margin-top: 10px;
+            text-transform: uppercase;
+        }
+        .btn:active { transform: translate(4px, 4px); box-shadow: 0px 0px 0px; }
+        .btn:disabled { background: #ced6e0; color: #747d8c; cursor: not-allowed; transform: none; box-shadow: var(--shadow); }
+        
+        .btn-red { background: var(--secondary); color: white; }
+        .btn-green { background: var(--accent); color: white; }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            border: var(--border);
+            border-radius: 12px;
+            font-size: 18px;
+            font-family: 'Nunito', sans-serif;
+            margin: 10px 0;
+            background: #f1f2f6;
+            outline: none;
+        }
+        input:focus { background: white; border-color: var(--bg-color); }
+
+        /* --- AVATARLAR --- */
+        .avatars { display: flex; justify-content: center; gap: 10px; margin: 15px 0; flex-wrap: wrap; }
+        .avatar-option { 
+            font-size: 35px; cursor: pointer; border: 2px solid transparent; border-radius: 50%; padding: 5px; 
+            transition: 0.2s; background: #dfe4ea;
+        }
+        .avatar-option.selected { background: var(--primary); border: var(--border); transform: scale(1.1); }
+
+        /* --- LOBBY LIST --- */
+        .player-list { list-style: none; padding: 0; max-height: 300px; overflow-y: auto; }
+        .player-list li {
+            background: #f1f2f6;
+            border: 2px solid #ced6e0;
+            margin-bottom: 8px;
+            padding: 10px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+        .player-list li button { width: auto; margin: 0; padding: 5px 15px; font-size: 14px; }
+
+        /* --- OYUN EKRANI --- */
+        .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .player-stat { text-align: center; width: 40%; position: relative; }
+        
+        /* HP BAR - Cartoon Style */
+        .hp-container {
+            width: 100%; height: 25px; background: #ced6e0;
+            border: var(--border); border-radius: 15px; overflow: hidden; position: relative;
+        }
+        .hp-fill {
+            height: 100%; width: 100%; background: var(--accent);
+            border-right: 2px solid black;
+            transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            /* Zolaqlı pattern */
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px);
+        }
+        .hp-text { position: absolute; top: 0; left: 0; width: 100%; font-size: 12px; line-height: 22px; font-weight: bold; color: black; }
+
+        /* --- 3D DICE (Cartoon White) --- */
+        .scene { width: 80px; height: 80px; perspective: 400px; }
+        .cube {
+            width: 100%; height: 100%; position: relative;
+            transform-style: preserve-3d; transform: translateZ(-40px);
+            transition: transform 1s ease-out;
+        }
+        .cube__face {
+            position: absolute; width: 80px; height: 80px;
+            background: white; border: 3px solid black; border-radius: 12px;
+            font-size: 30px; font-weight: bold; color: black;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+        }
+        /* Dot style instead of numbers could be nice, but keeping numbers for simplicity */
+        .cube__face--1  { transform: rotateY(  0deg) translateZ(40px); }
+        .cube__face--2  { transform: rotateY( 90deg) translateZ(40px); }
+        .cube__face--3  { transform: rotateY(180deg) translateZ(40px); }
+        .cube__face--4  { transform: rotateY(-90deg) translateZ(40px); }
+        .cube__face--5  { transform: rotateX( 90deg) translateZ(40px); }
+        .cube__face--6  { transform: rotateX(-90deg) translateZ(40px); }
+
+        /* --- MODAL --- */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); display: none;
+            justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-box {
+            background: white; padding: 25px; border-radius: 20px;
+            border: var(--border); box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            text-align: center; width: 85%; max-width: 320px;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* --- TABS --- */
+        .tabs { display: flex; margin-bottom: 15px; background: #dfe4ea; border-radius: 12px; padding: 5px; }
+        .tab { flex: 1; text-align: center; padding: 8px; cursor: pointer; border-radius: 8px; font-weight: bold; color: #747d8c; }
+        .tab.active { background: white; color: var(--text-dark); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        #loginScreen, #lobbyScreen, #gameScreen { display: none; }
+        .visible { display: block !important; }
+
+        /* Mobile Fixes */
+        @media (max-height: 700px) {
+            .container { padding: 15px; margin-top: 0; }
+            .scene { width: 60px; height: 60px; }
+            .cube__face { width: 60px; height: 60px; transform: translateZ(-30px); font-size: 20px;}
+            .cube__face--1 { transform: rotateY(0deg) translateZ(30px); }
+            .cube__face--2 { transform: rotateY(90deg) translateZ(30px); }
+            .cube__face--3 { transform: rotateY(180deg) translateZ(30px); }
+            .cube__face--4 { transform: rotateY(-90deg) translateZ(30px); }
+            .cube__face--5 { transform: rotateX(90deg) translateZ(30px); }
+            .cube__face--6 { transform: rotateX(-90deg) translateZ(30px); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loginScreen" class="container visible" style="text-align: center;">
+        <h1 style="font-size: 36px; color: var(--primary); text-shadow: 3px 3px 0px black; -webkit-text-stroke: 1.5px black;">DICE BATTLE</h1>
+        <p style="font-weight: bold;">Cibindəki Casino!</p>
+
+        <div class="avatars">
+            <div class="avatar-option selected" onclick="selAvatar('🐹')">🐹</div>
+            <div class="avatar-option" onclick="selAvatar('🐸')">🐸</div>
+            <div class="avatar-option" onclick="selAvatar('🐵')">🐵</div>
+            <div class="avatar-option" onclick="selAvatar('🐼')">🐼</div>
+            <div class="avatar-option" onclick="selAvatar('🦊')">🦊</div>
+        </div>
+
+        <input type="text" id="username" placeholder="Adın nədir?" maxlength="10">
+        <button onclick="login()" class="btn btn-green">BAŞLA 🚀</button>
+    </div>
+
+    <div id="lobbyScreen" class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div id="myAvatarDisplay" style="font-size:30px; border:2px solid black; border-radius:50%; background:white; width:50px; height:50px; display:flex; justify-content:center; align-items:center;">😎</div>
+                <div>
+                    <div id="myNameDisplay" style="font-weight:bold; font-size:18px;">Player</div>
+                    <div style="font-size:14px; color:#2ecc71; font-weight:bold;">💰 <span id="myBalanceDisplay">0</span></div>
+                </div>
+            </div>
+            <button onclick="logout()" style="background:none; border:none; font-size:20px; cursor:pointer;">🚪</button>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="setTab('players')">Oyunçular</div>
+            <div class="tab" onclick="setTab('leaders')">Liderlər</div>
+        </div>
+
+        <ul id="listPlayers" class="player-list"></ul>
+        <ul id="listLeaders" class="player-list" style="display:none;"></ul>
+    </div>
+
+    <div id="gameScreen" class="container">
+        <h2 style="text-align:center; color: var(--secondary); margin-bottom:15px;">⚔️ DUEL ⚔️</h2>
+        
+        <div class="game-header">
+            <div class="player-stat">
+                <div style="font-size:40px;">😎</div>
+                <div class="hp-container"><div id="hpP1" class="hp-fill"></div><span id="hpTxtP1" class="hp-text">100</span></div>
+                <small>SƏN</small>
+            </div>
+            <div style="font-weight:bold; font-size:20px;">VS</div>
+            <div class="player-stat">
+                <div id="oppAvatarDisplay" style="font-size:40px;">😈</div>
+                <div class="hp-container"><div id="hpP2" class="hp-fill" style="background:var(--secondary);"></div><span id="hpTxtP2" class="hp-text">100</span></div>
+                <small>RƏQİB</small>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-around; margin: 30px 0;">
+            <div class="scene"><div id="cubeP1" class="cube">
+                <div class="cube__face cube__face--1">1</div><div class="cube__face cube__face--2">2</div><div class="cube__face cube__face--3">3</div>
+                <div class="cube__face cube__face--4">4</div><div class="cube__face cube__face--5">5</div><div class="cube__face cube__face--6">6</div>
+            </div></div>
+
+            <div class="scene"><div id="cubeP2" class="cube">
+                <div class="cube__face cube__face--1">1</div><div class="cube__face cube__face--2">2</div><div class="cube__face cube__face--3">3</div>
+                <div class="cube__face cube__face--4">4</div><div class="cube__face cube__face--5">5</div><div class="cube__face cube__face--6">6</div>
+            </div></div>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <div id="gameMsg" style="height: 30px; font-weight: bold; margin-bottom: 10px;">Hazır ol...</div>
+            <button id="rollBtn" onclick="rollDice()" class="btn btn-green">ZƏRİ AT 🎲</button>
+            <button id="backBtn" onclick="backToLobby()" class="btn btn-red" style="display:none;">ÇIXIŞ</button>
+        </div>
+    </div>
+
+    <div id="modalInvite" class="modal">
+        <div class="modal-box">
+            <div style="font-size: 50px;">📩</div>
+            <h3>Oyun Təklifi!</h3>
+            <p><b id="inviterName">Kiməsə</b> səni duelə çağırır!</p>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button onclick="replyInvite(true)" class="btn btn-green">GƏLİRƏM</button>
+                <button onclick="replyInvite(false)" class="btn btn-red">YOX</button>
+            </div>
+        </div>
+    </div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    let me = { name: '', avatar: '🐹', balance: 1000 };
+    let gameId = null;
+    let pendingInv = null;
+
+    // --- SETUP ---
+    function selAvatar(av) {
+        me.avatar = av;
+        document.querySelectorAll('.avatar-option').forEach(e => e.classList.remove('selected'));
+        event.target.classList.add('selected');
+    }
+
+    function switchScreen(id) {
+        document.querySelectorAll('.container').forEach(e => e.classList.remove('visible'));
+        document.getElementById(id).classList.add('visible');
+    }
+
+    function login() {
+        const n = document.getElementById('username').value.trim();
+        if(!n) return alert("Adını yaz!");
+        
+        const stored = localStorage.getItem('cartoonCasino');
+        if(stored) me.balance = JSON.parse(stored).balance;
+        
+        me.name = n;
+        switchScreen('lobbyScreen');
+        updateHeader();
+        socket.emit('login', me);
+    }
+
+    function logout() {
+        location.reload();
+    }
+
+    function updateHeader() {
+        document.getElementById('myAvatarDisplay').innerText = me.avatar;
+        document.getElementById('myNameDisplay').innerText = me.name;
+        document.getElementById('myBalanceDisplay').innerText = me.balance;
+        localStorage.setItem('cartoonCasino', JSON.stringify({balance: me.balance}));
+    }
+
+    // --- TABS ---
+    function setTab(t) {
+        document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
+        event.target.classList.add('active');
+        document.getElementById('listPlayers').style.display = (t==='players')?'block':'none';
+        document.getElementById('listLeaders').style.display = (t==='leaders')?'block':'none';
+    }
+
+    // --- SOCKETS ---
+    socket.on('updatePlayerList', (list) => {
+        const ul = document.getElementById('listPlayers');
+        ul.innerHTML = '';
+        if(list.length===0) ul.innerHTML = '<li style="text-align:center; opacity:0.5">Tək sən varsan... 😔</li>';
+        
+        list.forEach(p => {
+            if(p.id !== socket.id) {
+                ul.innerHTML += `
+                <li>
+                    <div>${p.avatar} ${p.name}</div>
+                    <button class="btn btn-green" style="width:auto" onclick="invite('${p.id}')">⚔️</button>
+                </li>`;
+            }
+        });
+    });
+
+    socket.on('updateLeaderboard', (list) => {
+        const ul = document.getElementById('listLeaders');
+        ul.innerHTML = '';
+        list.forEach((p, i) => {
+            ul.innerHTML += `<li><div>#${i+1} ${p.avatar} ${p.name}</div> <div style="color:#2ed573">${p.balance}💰</div></li>`;
+        });
+    });
+
+    // --- INVITE ---
+    function invite(id) {
+        socket.emit('sendInvite', id);
+        const btn = event.target;
+        btn.innerText = "⏳"; btn.disabled=true;
+        setTimeout(()=>{btn.innerText="⚔️"; btn.disabled=false;}, 5000);
+    }
+
+    socket.on('errorMsg', m => alert(m));
+    socket.on('receiveInvite', d => {
+        pendingInv = d.fromId;
+        document.getElementById('inviterName').innerText = `${d.fromAvatar} ${d.fromName}`;
+        document.getElementById('modalInvite').style.display = 'flex';
+    });
+
+    function replyInvite(acc) {
+        document.getElementById('modalInvite').style.display = 'none';
+        socket.emit('inviteResponse', { fromId: pendingInv, accepted: acc });
+    }
+
+    // --- GAME ---
+    socket.on('gameStart', d => {
+        gameId = d.gameId;
+        switchScreen('gameScreen');
+        document.getElementById('oppAvatarDisplay').innerText = d.opponent.avatar;
+        updateHp(100, 100);
+        document.getElementById('gameMsg').innerText = "Oyun Başladı!";
+        document.getElementById('rollBtn').style.display = 'inline-block';
+        document.getElementById('backBtn').style.display = 'none';
+        // Reset Dice
+        document.getElementById('cubeP1').style.transform = `rotateX(0deg) rotateY(0deg)`;
+        document.getElementById('cubeP2').style.transform = `rotateX(0deg) rotateY(0deg)`;
+    });
+
+    function rollDice() {
+        socket.emit('rollDice', gameId);
+        document.getElementById('rollBtn').style.display = 'none';
+        document.getElementById('gameMsg').innerText = "Zərlər fırlanır...";
+    }
+
+    socket.on('rollResult', d => {
+        const el = (d.roller === socket.id) ? 'cubeP1' : 'cubeP2';
+        rotateCube(el, d.roll);
+    });
+
+    function rotateCube(id, val) {
+        const el = document.getElementById(id);
+        const spins = 1080; // 3 full spins
+        let rx=0, ry=0;
+        // 3D map for logic
+        if(val===1) { rx=0; ry=0; }
+        if(val===2) { rx=0; ry=-90; }
+        if(val===3) { rx=0; ry=-180; }
+        if(val===4) { rx=0; ry=90; }
+        if(val===5) { rx=90; ry=0; }
+        if(val===6) { rx=-90; ry=0; }
+        
+        el.style.transform = `rotateX(${rx+spins}deg) rotateY(${ry+spins}deg)`;
+    }
+
+    socket.on('healthUpdate', d => {
+        updateHp(d.myHp, d.oppHp);
+        document.getElementById('gameMsg').innerText = d.msg;
+    });
+
+    socket.on('nextRound', () => {
+        setTimeout(() => {
+            document.getElementById('rollBtn').style.display = 'inline-block';
+            document.getElementById('gameMsg').innerText = "Sənin növbən!";
+        }, 1500);
+    });
+
+    socket.on('gameOver', d => {
+        if(d.won) {
+            me.balance += 100;
+            document.getElementById('gameMsg').innerText = "🏆 SƏN UDUN! (+100)";
+            document.getElementById('gameMsg').style.color = "#2ed573";
+        } else {
+            me.balance -= 100;
+            document.getElementById('gameMsg').innerText = "😢 UDUZDUN... (-100)";
+            document.getElementById('gameMsg').style.color = "#ff4757";
+        }
+        updateHeader();
+        document.getElementById('backBtn').style.display = 'inline-block';
+    });
+
+    function updateHp(m, o) {
+        document.getElementById('hpP1').style.width = m + '%';
+        document.getElementById('hpTxtP1').innerText = Math.ceil(m);
+        document.getElementById('hpP2').style.width = o + '%';
+        document.getElementById('hpTxtP2').innerText = Math.ceil(o);
+        // Color logic
+        document.getElementById('hpP1').style.background = m<30 ? '#ff4757' : '#2ed573';
+    }
+
+    function backToLobby() {
+        switchScreen('lobbyScreen');
+        socket.emit('login', me);
+    }
+</script>
+</body>
+</html>
